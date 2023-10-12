@@ -1,5 +1,6 @@
 import numpy as np
 from cereal import car
+import select
 import socket
 import json
 from openpilot.common.conversions import Conversions as CV
