@@ -22,9 +22,15 @@ class CarState(CarStateBase):
     self.HOST = '127.0.0.1'
     self.PORT = 65432
     self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.s.setblocking(False)  # 设置为非阻塞模式
     self.s.bind((self.HOST, self.PORT))
     self.s.listen()
-    self.conn, self.addr = self.s.accept()
+    self.conn = None
+    self.addr = None
+  def check_for_connection(self):
+    readable, _, _ = select.select([self.s], [], [], 0)  # 轮询，0秒超时
+    if readable:  # 如果socket可读，意味着有客户端尝试连
+      self.conn, self.addr = self.s.accept()
   def create_button_events(self, pt_cp, buttons):
     button_events = []
 
@@ -39,7 +45,7 @@ class CarState(CarStateBase):
 
     return button_events
 
-  def start_server(data):
+  def start_server(self, data):
       with self.conn:
         serialized_data = json.dumps(data)
         self.conn.sendall(serialized_data.encode('utf-8'))
@@ -92,7 +98,8 @@ class CarState(CarStateBase):
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
     ret.parkingBrake = bool(pt_cp.vl["Kombi_01"]["KBI_Handbremse"])  # FIXME: need to include an EPB check as well
     ret.brakeLights = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
-    self.start_server(data)
+    if self.conn != None:
+      self.start_server(data)
     
 
     # Update gear and/or clutch position data.
