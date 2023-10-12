@@ -49,7 +49,12 @@ class CarState(CarStateBase):
   def start_server(self, data):
     if self.conn:
       serialized_data = json.dumps(data)
-      self.conn.sendall(serialized_data.encode('utf-8'))
+      try:
+        self.conn.sendall(serialized_data.encode('utf-8'))
+      except BrokenPipeError:
+            # This exception means the client has disconnected
+        self.conn.close()
+        self.conn = None
               
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     data = {}
