@@ -1,5 +1,7 @@
 import numpy as np
 from cereal import car
+import socket
+import json
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
@@ -31,6 +33,18 @@ class CarState(CarStateBase):
 
     return button_events
 
+  def start_server(data):
+    HOST = '127.0.0.1'
+    PORT = 65432
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+      s.bind((HOST, PORT))
+      s.listen()
+      conn, addr = s.accept()
+      with conn:
+        serialized_data = json.dumps(data)
+        conn.sendall(serialized_data.encode('utf-8'))
+              
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     data = {}
     if self.CP.carFingerprint in PQ_CARS:
@@ -79,6 +93,8 @@ class CarState(CarStateBase):
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
     ret.parkingBrake = bool(pt_cp.vl["Kombi_01"]["KBI_Handbremse"])  # FIXME: need to include an EPB check as well
     ret.brakeLights = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
+    start_server(data)
+    
 
     # Update gear and/or clutch position data.
     if trans_type == TransmissionType.automatic:
