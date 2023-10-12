@@ -32,6 +32,7 @@ class CarState(CarStateBase):
     return button_events
 
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
+    data = {}
     if self.CP.carFingerprint in PQ_CARS:
       return self.update_pq(pt_cp, cam_cp, ext_cp, trans_type)
 
@@ -39,7 +40,7 @@ class CarState(CarStateBase):
 
     self.prev_mads_enabled = self.mads_enabled
     self.buttonStatesPrev = self.buttonStates.copy()
-
+    
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["ESP_19"]["ESP_VL_Radgeschw_02"],
@@ -47,7 +48,7 @@ class CarState(CarStateBase):
       pt_cp.vl["ESP_19"]["ESP_HL_Radgeschw_02"],
       pt_cp.vl["ESP_19"]["ESP_HR_Radgeschw_02"],
     )
-
+    data["get_wheel_speeds"] = str(ret.wheelSpeeds)
     ret.vEgoRaw = float(np.mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]))
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw == 0
@@ -55,6 +56,7 @@ class CarState(CarStateBase):
     # Update steering angle, rate, yaw rate, and driver input torque. VW send
     # the sign/direction in a separate signal so they must be recombined.
     ret.steeringAngleDeg = pt_cp.vl["LWI_01"]["LWI_Lenkradwinkel"] * (1, -1)[int(pt_cp.vl["LWI_01"]["LWI_VZ_Lenkradwinkel"])]
+    data["steeringAngleDeg"] = str(ret.steeringAngleDeg)
     ret.steeringRateDeg = pt_cp.vl["LWI_01"]["LWI_Lenkradw_Geschw"] * (1, -1)[int(pt_cp.vl["LWI_01"]["LWI_VZ_Lenkradw_Geschw"])]
     ret.steeringTorque = pt_cp.vl["LH_EPS_03"]["EPS_Lenkmoment"] * (1, -1)[int(pt_cp.vl["LH_EPS_03"]["EPS_VZ_Lenkmoment"])]
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
@@ -67,8 +69,11 @@ class CarState(CarStateBase):
 
     # Update gas, brakes, and gearshift.
     ret.gas = pt_cp.vl["Motor_20"]["MO_Fahrpedalrohwert_01"] / 100.0
+    data["gas"] = str(ret.gas)
     ret.gasPressed = ret.gas > 0
+    data["gasPressed"] = str(ret.gasPressed)
     ret.brake = pt_cp.vl["ESP_05"]["ESP_Bremsdruck"] / 250.0  # FIXME: this is pressure in Bar, not sure what OP expects
+    data["brake"] = str(ret.brake)
     brake_pedal_pressed = bool(pt_cp.vl["Motor_14"]["MO_Fahrer_bremst"])
     brake_pressure_detected = bool(pt_cp.vl["ESP_05"]["ESP_Fahrer_bremst"])
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
