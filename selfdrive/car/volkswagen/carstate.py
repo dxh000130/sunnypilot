@@ -23,6 +23,7 @@ class CarState(CarStateBase):
     self.HOST = '127.0.0.1'
     self.PORT = 65432
     self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.s.setblocking(False)  # 设置为非阻塞模式
     self.s.bind((self.HOST, self.PORT))
     self.s.listen()
