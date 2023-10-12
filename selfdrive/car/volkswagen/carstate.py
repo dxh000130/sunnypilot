@@ -52,6 +52,7 @@ class CarState(CarStateBase):
               
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     data = {}
+    
     if self.CP.carFingerprint in PQ_CARS:
       return self.update_pq(pt_cp, cam_cp, ext_cp, trans_type)
 
@@ -98,6 +99,8 @@ class CarState(CarStateBase):
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
     ret.parkingBrake = bool(pt_cp.vl["Kombi_01"]["KBI_Handbremse"])  # FIXME: need to include an EPB check as well
     ret.brakeLights = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
+    if self.conn == None:
+      self.check_for_connection()
     if self.conn != None:
       self.start_server(data)
     
