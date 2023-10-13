@@ -106,10 +106,7 @@ class CarState(CarStateBase):
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
     ret.parkingBrake = bool(pt_cp.vl["Kombi_01"]["KBI_Handbremse"])  # FIXME: need to include an EPB check as well
     ret.brakeLights = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
-    if self.conn == None:
-      self.check_for_connection()
-    if self.conn != None:
-      self.start_server(data)
+
     
 
     # Update gear and/or clutch position data.
@@ -197,7 +194,10 @@ class CarState(CarStateBase):
 
     # Digital instrument clusters expect the ACC HUD lead car distance to be scaled differently
     self.upscale_lead_car_signal = bool(pt_cp.vl["Kombi_03"]["KBI_Variante"])
-
+    if self.conn == None:
+      self.check_for_connection()
+    if self.conn != None:
+      self.start_server(ret)
     return ret
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
