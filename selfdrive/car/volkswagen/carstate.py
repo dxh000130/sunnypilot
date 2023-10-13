@@ -1,8 +1,6 @@
 import numpy as np
 from cereal import car
-import select
-import socket
-import json
+from socket_manager import socket_manager_instance as sm
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
@@ -20,19 +18,6 @@ class CarState(CarStateBase):
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
 
-    self.HOST = '127.0.0.1'
-    self.PORT = 65432
-    self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    self.s.setblocking(False)  # 设置为非阻塞模式
-    self.s.bind((self.HOST, self.PORT))
-    self.s.listen()
-    self.conn = None
-    self.addr = None
-  def check_for_connection(self):
-    readable, _, _ = select.select([self.s], [], [], 0)  # 轮询，0秒超时
-    if readable:  # 如果socket可读，意味着有客户端尝试连
-      self.conn, self.addr = self.s.accept()
   def create_button_events(self, pt_cp, buttons):
     button_events = []
 
@@ -46,16 +31,6 @@ class CarState(CarStateBase):
       self.button_states[button.event_type] = state
 
     return button_events
-
-  def start_server(self, data):
-    if self.conn:
-      serialized_data = json.dumps(data)
-      try:
-        self.conn.sendall(serialized_data.encode('utf-8'))
-      except BrokenPipeError:
-            # This exception means the client has disconnected
-        self.conn.close()
-        self.conn = None
               
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     data = {}
@@ -194,10 +169,8 @@ class CarState(CarStateBase):
 
     # Digital instrument clusters expect the ACC HUD lead car distance to be scaled differently
     self.upscale_lead_car_signal = bool(pt_cp.vl["Kombi_03"]["KBI_Variante"])
-    if self.conn == None:
-      self.check_for_connection()
-    if self.conn != None:
-      self.start_server(ret)
+    sm.check_for_connection()
+    sm.send_data(ret)
     return ret
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
