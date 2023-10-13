@@ -50,7 +50,6 @@ class CarState(CarStateBase):
       pt_cp.vl["ESP_19"]["ESP_HL_Radgeschw_02"],
       pt_cp.vl["ESP_19"]["ESP_HR_Radgeschw_02"],
     )
-    data["get_wheel_speeds"] = str(ret.wheelSpeeds)
     ret.vEgoRaw = float(np.mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]))
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw == 0
@@ -58,7 +57,6 @@ class CarState(CarStateBase):
     # Update steering angle, rate, yaw rate, and driver input torque. VW send
     # the sign/direction in a separate signal so they must be recombined.
     ret.steeringAngleDeg = pt_cp.vl["LWI_01"]["LWI_Lenkradwinkel"] * (1, -1)[int(pt_cp.vl["LWI_01"]["LWI_VZ_Lenkradwinkel"])]
-    data["steeringAngleDeg"] = str(ret.steeringAngleDeg)
     ret.steeringRateDeg = pt_cp.vl["LWI_01"]["LWI_Lenkradw_Geschw"] * (1, -1)[int(pt_cp.vl["LWI_01"]["LWI_VZ_Lenkradw_Geschw"])]
     ret.steeringTorque = pt_cp.vl["LH_EPS_03"]["EPS_Lenkmoment"] * (1, -1)[int(pt_cp.vl["LH_EPS_03"]["EPS_VZ_Lenkmoment"])]
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
@@ -71,11 +69,8 @@ class CarState(CarStateBase):
 
     # Update gas, brakes, and gearshift.
     ret.gas = pt_cp.vl["Motor_20"]["MO_Fahrpedalrohwert_01"] / 100.0
-    data["gas"] = str(ret.gas)
     ret.gasPressed = ret.gas > 0
-    data["gasPressed"] = str(ret.gasPressed)
     ret.brake = pt_cp.vl["ESP_05"]["ESP_Bremsdruck"] / 250.0  # FIXME: this is pressure in Bar, not sure what OP expects
-    data["brake"] = str(ret.brake)
     brake_pedal_pressed = bool(pt_cp.vl["Motor_14"]["MO_Fahrer_bremst"])
     brake_pressure_detected = bool(pt_cp.vl["ESP_05"]["ESP_Fahrer_bremst"])
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
@@ -169,8 +164,11 @@ class CarState(CarStateBase):
 
     # Digital instrument clusters expect the ACC HUD lead car distance to be scaled differently
     self.upscale_lead_car_signal = bool(pt_cp.vl["Kombi_03"]["KBI_Variante"])
+    keys_to_use = ["LWI_01", "LH_EPS_03", "ESP_19", "ESP_05", "ESP_21", "Motor_20", "TSK_06", "ESP_02", "GRA_ACC_01", "Gateway_72", "Motor_14", "Airbag_02", "Kombi_01", "Blinkmodi_02", "Kombi_03", "Getriebe_11"]  # 这只是示例键，根据你的需要替换
+    for key in keys_to_use:
+      data[key] = pt_cp.vl[key]
     sm.check_for_connection()
-    sm.send_data(ret)
+    sm.send_data(data)
     return ret
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
