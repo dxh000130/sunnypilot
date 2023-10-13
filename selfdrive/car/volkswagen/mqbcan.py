@@ -1,4 +1,4 @@
-from socket_manager import socket_manager_instance as sm
+from openpilot.selfdrive.car.volkswagen.socket_manager import socket_manager_instance as sm
 def create_steering_control(packer, bus, apply_steer, lkas_enabled):
   values = {
     "HCA_01_Status_HCA": 5 if lkas_enabled else 3,
