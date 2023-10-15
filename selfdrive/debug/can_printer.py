@@ -8,6 +8,7 @@ import cereal.messaging as messaging
 
 
 def can_printer(bus, max_msg, addr, ascii_decode):
+  LOG_FILE = '/data/openpilot/selfdrive/car/volkswagen/output1.log'
   logcan = messaging.sub_sock('can', addr=addr)
 
   start = time.monotonic()
@@ -30,6 +31,8 @@ def can_printer(bus, max_msg, addr, ascii_decode):
         if max_msg is None or addr < max_msg:
           dd += "%04X(%4d)(%6d)(%3dHz) %s %s\n" % (addr, addr, len(msgs[addr]), freq, x.ljust(20), a)
       print(dd)
+      with open(LOG_FILE, 'a') as file:
+        file.write(message + '\n')
       lp = time.monotonic()
 
 if __name__ == "__main__":
