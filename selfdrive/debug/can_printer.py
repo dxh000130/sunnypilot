@@ -32,7 +32,7 @@ def can_printer(bus, max_msg, addr, ascii_decode):
           dd += "%04X(%4d)(%6d)(%3dHz) %s %s\n" % (addr, addr, len(msgs[addr]), freq, x.ljust(20), a)
       print(dd)
       with open(LOG_FILE, 'a') as file:
-        file.write(message + '\n')
+        file.write(dd + '\n')
       lp = time.monotonic()
 
 if __name__ == "__main__":
