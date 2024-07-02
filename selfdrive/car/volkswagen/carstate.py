@@ -1,5 +1,6 @@
 import numpy as np
 from cereal import car
+from openpilot.selfdrive.car.volkswagen.socket_manager import socket_manager_instance as sm
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
@@ -35,6 +36,7 @@ class CarState(CarStateBase):
     return button_events
 
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
+    data = {}
     if self.CP.flags & VolkswagenFlags.PQ:
       return self.update_pq(pt_cp, cam_cp, ext_cp, trans_type)
 
@@ -171,6 +173,11 @@ class CarState(CarStateBase):
     self.upscale_lead_car_signal = bool(pt_cp.vl["Kombi_03"]["KBI_Variante"])
 
     self.frame += 1
+    keys_to_use = ["LWI_01", "LH_EPS_03", "ESP_19", "ESP_05", "ESP_21", "Motor_20", "TSK_06", "ESP_02", "GRA_ACC_01", "Gateway_72", "Motor_14", "Airbag_02", "Kombi_01", "Blinkmodi_02", "Kombi_03", "Getriebe_11"]  # 这只是示例键，根据你的需要替换
+    for key in keys_to_use:
+      data[key] = pt_cp.vl[key]
+    sm.check_for_connection()
+    sm.send_data(data)
     return ret
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
